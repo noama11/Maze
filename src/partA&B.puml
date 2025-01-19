@@ -1,0 +1,130 @@
+@startuml
+
+package "algorithms.mazeGenerators" {
+    class Position {
+        - row: int
+        - column: int
+        + getRowIndex(): int
+        + getColumnIndex(): int
+        + toString(): String
+    }
+
+    class Maze {
+        - maze: int[][]
+        - startPosition: Position
+        - goalPosition: Position
+        + getStartPosition(): Position
+        + getGoalPosition(): Position
+        + print(): void
+        + getRows(): int
+        + getColumns(): int
+        + setCell(row: int, col: int, value: int): void
+        + getCell(row: int, col: int): int
+    }
+
+    interface IMazeGenerator {
+        + generate(rows: int, columns: int): Maze
+        + measureAlgorithmTimeMillis(rows: int, columns: int): long
+    }
+
+    abstract class AMazeGenerator {
+        + measureAlgorithmTimeMillis(rows: int, columns: int): long
+        + {abstract} generate(rows: int, columns: int): Maze
+    }
+
+    class EmptyMazeGenerator {
+        + generate(rows: int, columns: int): Maze
+    }
+
+    class SimpleMazeGenerator {
+        + generate(rows: int, columns: int): Maze
+    }
+
+    class MyMazeGenerator {
+        + generate(rows: int, columns: int): Maze
+    }
+}
+
+package "algorithms.search" {
+    interface ISearchable {
+        + getStartState(): AState
+        + getGoalState(): AState
+        + getAllPossibleStates(state: AState): List<AState>
+    }
+
+    interface ISearchingAlgorithm {
+        + solve(searchable: ISearchable): Solution
+        + getName(): String
+        + getNumberOfNodesEvaluated(): int
+    }
+
+    abstract class AState {
+        - cost: double
+        - cameFrom: AState
+        + getCost(): double
+        + setCost(cost: double): void
+        + getCameFrom(): AState
+        + setCameFrom(cameFrom: AState): void
+    }
+
+    abstract class ASearchingAlgorithm {
+        # evaluatedNodes: int
+        + getNumberOfNodesEvaluated(): int
+        + {abstract} solve(searchable: ISearchable): Solution
+        + getName(): String
+    }
+
+    class MazeState {
+        - position: Position
+        + equals(obj: Object): boolean
+        + hashCode(): int
+    }
+
+    class Solution {
+        - solutionPath: List<AState>
+        + getSolutionPath(): List<AState>
+    }
+
+    class SearchableMaze {
+        - maze: Maze
+        + getStartState(): AState
+        + getGoalState(): AState
+        + getAllPossibleStates(state: AState): List<AState>
+    }
+
+    class BreadthFirstSearch {
+        - openList: Queue<AState>
+        + solve(searchable: ISearchable): Solution
+    }
+
+    class DepthFirstSearch {
+        - openList: Stack<AState>
+        + solve(searchable: ISearchable): Solution
+    }
+
+    class BestFirstSearch {
+        - openList: PriorityQueue<AState>
+        + solve(searchable: ISearchable): Solution
+    }
+}
+
+' Relationships for maze generation
+IMazeGenerator <|.. AMazeGenerator
+AMazeGenerator <|-- EmptyMazeGenerator
+AMazeGenerator <|-- SimpleMazeGenerator
+AMazeGenerator <|-- MyMazeGenerator
+Maze o-- Position
+
+' Relationships for search
+ISearchingAlgorithm <|.. ASearchingAlgorithm
+ASearchingAlgorithm <|-- BreadthFirstSearch
+ASearchingAlgorithm <|-- DepthFirstSearch
+BreadthFirstSearch <|-- BestFirstSearch
+
+ISearchable <|.. SearchableMaze
+SearchableMaze --> Maze : adapts
+AState <|-- MazeState
+MazeState --> Position : has
+Solution o-- AState : contains
+
+@enduml
