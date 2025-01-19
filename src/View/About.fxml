@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="400.0" prefWidth="600.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1">
+    <children>
+        <Pane prefHeight="306.0" prefWidth="394.0">
+            <children>
+
+                <Label layoutX="24.0" layoutY="60.0" text="This game created by Noam Cohen, Shahar Revivo and Shay Herling. &#10;&#10;There are 3 options for generating or solving the maze: DFS, BFS, BestFS.&#10;&#10;Have fun :)" />
+            </children>
+        </Pane>
+    </children>
+</AnchorPane>

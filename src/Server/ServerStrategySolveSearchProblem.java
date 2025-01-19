@@ -11,75 +11,149 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Locale;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 public class ServerStrategySolveSearchProblem implements IServerStrategy {
-    private HashMap<String, Solution> mazeSolutions = new HashMap<>();
+//    private HashMap<String, Solution> mazeSolutions = new HashMap<>();
+    private final ConcurrentHashMap<String, Solution> mazeSolutions = new ConcurrentHashMap<>();
+    private final ReentrantReadWriteLock fileLock = new ReentrantReadWriteLock();
+    private final String tempDirectoryPath = System.getProperty("java.io.tmpdir");
 
+//    @Override
+//    public void applyStrategy(InputStream inFromClient, OutputStream outToClient) {
+//        try {
+//            ObjectInputStream fromClient = new ObjectInputStream(inFromClient);
+//            ObjectOutputStream toClient = new ObjectOutputStream(outToClient);
+//            Maze maze = (Maze) fromClient.readObject();
+//
+//            String tempDirectoryPath = System.getProperty("java.io.tmpdir");
+//            String request = maze.toString();
+//            Solution sol = null;
+//
+//            // Using ConcurrentHashMap's atomic operations for thread safety
+//            Solution solution = mazeSolutions.get(request);
+//            if (solution != null) {
+//                sendSolutionToClient(solution, toClient);
+//                return;
+//            }
+//
+//            if (mazeSolutions.containsKey(request)) {
+//                sol = mazeSolutions.get(request);
+//                sendSolutionToClient(sol, toClient); // Check if exist in cache memory
+//
+//            } else {
+//                // Check if solution file exists
+//                if (solutionFileExists(tempDirectoryPath, request)) {  // If exist in file
+//                    Solution solution = retrieveSolutionFromFile(tempDirectoryPath, request);
+//
+//                    // Store solution in memory
+//                    mazeSolutions.put(request, solution);
+//
+//                    // Send solution to client
+//                    sendSolutionToClient(solution, toClient);
+//
+//                } else {
+//
+//                    // Generate maze and solve it according to the configuration file
+//                    Configurations config = Configurations.getInstance();
+//                    ISearchingAlgorithm searchingAlgorithm = null;
+//                    String searchAlgoName = config.getMazeSearchingAlgorithm();
+//
+//                    if(searchAlgoName.equalsIgnoreCase("BreadthFirstSearch")){
+//                        searchingAlgorithm = new BreadthFirstSearch();
+//                    }
+//                    else if(searchAlgoName.equalsIgnoreCase("BestFirstSearch")){
+//                        searchingAlgorithm = new BestFirstSearch();
+//                    }
+//                    else if(searchAlgoName.equalsIgnoreCase("DepthFirstSearch")){
+//                        searchingAlgorithm = new DepthFirstSearch();
+//                    }
+//
+//                    SearchableMaze searchableMaze = new SearchableMaze(maze);
+//                    Solution solution = searchingAlgorithm.solve(searchableMaze);
+//
+//                    // Save solution to file
+//                    saveSolutionToFile(tempDirectoryPath, request, solution);
+//                    // Store solution in memory
+//                    mazeSolutions.put(request, solution);
+//
+//                    // Send solution to client
+//                    sendSolutionToClient(solution, toClient);
+//
+//                }
+//            }
+//            fromClient.close();
+//            toClient.close();
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//        } catch (ClassNotFoundException e) {
+//            throw new RuntimeException(e);
+//        }
+//
+//    }
+@Override
+public void applyStrategy(InputStream inFromClient, OutputStream outToClient) {
+    try (ObjectInputStream fromClient = new ObjectInputStream(inFromClient);
+         ObjectOutputStream toClient = new ObjectOutputStream(outToClient)) {
 
-    @Override
-    public void applyStrategy(InputStream inFromClient, OutputStream outToClient) {
-        try {
-            ObjectInputStream fromClient = new ObjectInputStream(inFromClient);
-            ObjectOutputStream toClient = new ObjectOutputStream(outToClient);
-            Maze maze = (Maze) fromClient.readObject();
+        Maze maze = (Maze) fromClient.readObject();
+        String request = maze.toString();
 
-            String tempDirectoryPath = System.getProperty("java.io.tmpdir");
-            String request = maze.toString();
-            Solution sol = null;
-            if (mazeSolutions.containsKey(request)) {
-                sol = mazeSolutions.get(request);
-                sendSolutionToClient(sol, toClient); // Check if exist in cache memory
-
-            } else {
-                // Check if solution file exists
-                if (solutionFileExists(tempDirectoryPath, request)) {  // If exist in file
-                    Solution solution = retrieveSolutionFromFile(tempDirectoryPath, request);
-
-                    // Store solution in memory
-                    mazeSolutions.put(request, solution);
-
-                    // Send solution to client
-                    sendSolutionToClient(solution, toClient);
-
-                } else {
-
-                    // Generate maze and solve it according to the configuration file
-                    Configurations config = Configurations.getInstance();
-                    ISearchingAlgorithm searchingAlgorithm = null;
-                    String searchAlgoName = config.getMazeSearchingAlgorithm();
-
-                    if(searchAlgoName.equalsIgnoreCase("BreadthFirstSearch")){
-                        searchingAlgorithm = new BreadthFirstSearch();
-                    }
-                    else if(searchAlgoName.equalsIgnoreCase("BestFirstSearch")){
-                        searchingAlgorithm = new BestFirstSearch();
-                    }
-                    else if(searchAlgoName.equalsIgnoreCase("DepthFirstSearch")){
-                        searchingAlgorithm = new DepthFirstSearch();
-                    }
-
-                    SearchableMaze searchableMaze = new SearchableMaze(maze);
-                    Solution solution = searchingAlgorithm.solve(searchableMaze);
-
-                    // Save solution to file
-                    saveSolutionToFile(tempDirectoryPath, request, solution);
-                    // Store solution in memory
-                    mazeSolutions.put(request, solution);
-
-                    // Send solution to client
-                    sendSolutionToClient(solution, toClient);
-
-                }
-            }
-            fromClient.close();
-            toClient.close();
-        } catch (IOException e) {
-            e.printStackTrace();
-        } catch (ClassNotFoundException e) {
-            throw new RuntimeException(e);
+        // Using ConcurrentHashMap's atomic operations for thread safety
+        Solution solution = mazeSolutions.get(request); // Using ConcurrentHashMap's get method is thread-safe
+        if (solution != null) {
+            sendSolutionToClient(solution, toClient);
+            return;
         }
 
+        // If not in memory cache, check file system under read lock
+        fileLock.readLock().lock();
+        try {
+            if (solutionFileExists(tempDirectoryPath, request)) {
+                solution = retrieveSolutionFromFile(tempDirectoryPath, request);
+                mazeSolutions.putIfAbsent(request, solution);
+                sendSolutionToClient(solution, toClient);
+                return;
+            }
+        } finally {
+            fileLock.readLock().unlock();
+        }
+
+        // If we need to generate a new solution
+        Configurations config = Configurations.getInstance();
+        ISearchingAlgorithm searchingAlgorithm = null;
+        String searchAlgoName = config.getMazeSearchingAlgorithm();
+
+        if (searchAlgoName.equalsIgnoreCase("BreadthFirstSearch")) {
+            searchingAlgorithm = new BreadthFirstSearch();
+        } else if (searchAlgoName.equalsIgnoreCase("BestFirstSearch")) {
+            searchingAlgorithm = new BestFirstSearch();
+        } else if (searchAlgoName.equalsIgnoreCase("DepthFirstSearch")) {
+            searchingAlgorithm = new DepthFirstSearch();
+        }
+
+        SearchableMaze searchableMaze = new SearchableMaze(maze);
+        solution = searchingAlgorithm.solve(searchableMaze);
+
+        // Save under write lock to prevent concurrent file access
+        fileLock.writeLock().lock();
+        try {
+            saveSolutionToFile(tempDirectoryPath, request, solution);
+        } finally {
+            fileLock.writeLock().unlock();
+        }
+
+        // Use putIfAbsent to handle case where another thread might have solved it
+        mazeSolutions.putIfAbsent(request, solution); // Only stores if not already present
+        sendSolutionToClient(solution, toClient);
+
+    } catch (IOException | ClassNotFoundException e) {
+        e.printStackTrace();
     }
+}
+
+
 
     // Method to send the solution to the client
     private void sendSolutionToClient(Solution solution, ObjectOutputStream outputStream) {

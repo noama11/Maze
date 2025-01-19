@@ -1,0 +1,13 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<?import javafx.scene.control.*?>
+<?import javafx.scene.image.*?>
+<?import javafx.scene.layout.*?>
+
+<AnchorPane prefHeight="482.0" prefWidth="507.0" xmlns="http://javafx.com/javafx/17.0.2-ea" xmlns:fx="http://javafx.com/fxml/1" fx:controller="View.WinningController">
+    <children>
+        <ImageView fx:id="winningImage" fitHeight="500.0" fitWidth="447.0" layoutX="60.0" pickOnBounds="true" preserveRatio="true" />
+        <Button fx:id="newMazeButton" layoutX="90.0" layoutY="457.0" mnemonicParsing="false" onAction="#newMazeSelected" text="New Maze" />
+        <Button fx:id="exitButton" layoutX="361.0" layoutY="457.0" mnemonicParsing="false" onAction="#exitButtonSelected" text="Exit" />
+    </children>
+</AnchorPane>
