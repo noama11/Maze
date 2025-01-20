@@ -20,78 +20,7 @@ public class ServerStrategySolveSearchProblem implements IServerStrategy {
     private final ReentrantReadWriteLock fileLock = new ReentrantReadWriteLock();
     private final String tempDirectoryPath = System.getProperty("java.io.tmpdir");
 
-//    @Override
-//    public void applyStrategy(InputStream inFromClient, OutputStream outToClient) {
-//        try {
-//            ObjectInputStream fromClient = new ObjectInputStream(inFromClient);
-//            ObjectOutputStream toClient = new ObjectOutputStream(outToClient);
-//            Maze maze = (Maze) fromClient.readObject();
-//
-//            String tempDirectoryPath = System.getProperty("java.io.tmpdir");
-//            String request = maze.toString();
-//            Solution sol = null;
-//
-//            // Using ConcurrentHashMap's atomic operations for thread safety
-//            Solution solution = mazeSolutions.get(request);
-//            if (solution != null) {
-//                sendSolutionToClient(solution, toClient);
-//                return;
-//            }
-//
-//            if (mazeSolutions.containsKey(request)) {
-//                sol = mazeSolutions.get(request);
-//                sendSolutionToClient(sol, toClient); // Check if exist in cache memory
-//
-//            } else {
-//                // Check if solution file exists
-//                if (solutionFileExists(tempDirectoryPath, request)) {  // If exist in file
-//                    Solution solution = retrieveSolutionFromFile(tempDirectoryPath, request);
-//
-//                    // Store solution in memory
-//                    mazeSolutions.put(request, solution);
-//
-//                    // Send solution to client
-//                    sendSolutionToClient(solution, toClient);
-//
-//                } else {
-//
-//                    // Generate maze and solve it according to the configuration file
-//                    Configurations config = Configurations.getInstance();
-//                    ISearchingAlgorithm searchingAlgorithm = null;
-//                    String searchAlgoName = config.getMazeSearchingAlgorithm();
-//
-//                    if(searchAlgoName.equalsIgnoreCase("BreadthFirstSearch")){
-//                        searchingAlgorithm = new BreadthFirstSearch();
-//                    }
-//                    else if(searchAlgoName.equalsIgnoreCase("BestFirstSearch")){
-//                        searchingAlgorithm = new BestFirstSearch();
-//                    }
-//                    else if(searchAlgoName.equalsIgnoreCase("DepthFirstSearch")){
-//                        searchingAlgorithm = new DepthFirstSearch();
-//                    }
-//
-//                    SearchableMaze searchableMaze = new SearchableMaze(maze);
-//                    Solution solution = searchingAlgorithm.solve(searchableMaze);
-//
-//                    // Save solution to file
-//                    saveSolutionToFile(tempDirectoryPath, request, solution);
-//                    // Store solution in memory
-//                    mazeSolutions.put(request, solution);
-//
-//                    // Send solution to client
-//                    sendSolutionToClient(solution, toClient);
-//
-//                }
-//            }
-//            fromClient.close();
-//            toClient.close();
-//        } catch (IOException e) {
-//            e.printStackTrace();
-//        } catch (ClassNotFoundException e) {
-//            throw new RuntimeException(e);
-//        }
-//
-//    }
+
 @Override
 public void applyStrategy(InputStream inFromClient, OutputStream outToClient) {
     try (ObjectInputStream fromClient = new ObjectInputStream(inFromClient);
